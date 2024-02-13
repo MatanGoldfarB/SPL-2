@@ -2,10 +2,13 @@ package bguspl.set.ex;
 
 import bguspl.set.Env;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.LinkedList;
+
 
 /**
  * This class contains the data that is visible to the player.
@@ -29,6 +32,10 @@ public class Table {
      */
     protected final Integer[] cardToSlot; // slot per card (if any)
 
+    protected final List<LinkedList<Integer>> tokensOnSlot;
+    protected final Boolean[] shouldRemoveCard;
+
+
     /**
      * Constructor for testing.
      *
@@ -37,11 +44,19 @@ public class Table {
      * @param cardToSlot - mapping between a card and the slot it is in (null if none).
      */
     public Table(Env env, Integer[] slotToCard, Integer[] cardToSlot) {
-
         this.env = env;
         this.slotToCard = slotToCard;
         this.cardToSlot = cardToSlot;
+        tokensOnSlot = new ArrayList<>();
+        for (int i = 0; i < env.config.tableSize; i++) {
+            tokensOnSlot.add(new LinkedList<>());
+        }
+        this.shouldRemoveCard = new Boolean[env.config.tableSize];
+        for (int i = 0; i < shouldRemoveCard.length; i++) {
+            shouldRemoveCard[i] = false;
+        }
     }
+
 
     /**
      * Constructor for actual usage.
@@ -110,6 +125,9 @@ public class Table {
         // TODO implement
         cardToSlot[slotToCard[slot]] = null;
         slotToCard[slot] = null;
+        tokensOnSlot.get(slot).clear();
+        shouldRemoveCard[slot] = false;
+        env.ui.removeTokens(slot);
         env.ui.removeCard(slot);
     }
 
@@ -118,8 +136,9 @@ public class Table {
      * @param player - the player the token belongs to.
      * @param slot   - the slot on which to place the token.
      */
-    public void placeToken(int player, int slot) {
+    public synchronized void placeToken(int player, int slot) {
         // TODO implement
+        tokensOnSlot.get(slot).add(player);
         env.ui.placeToken(player, slot);
     }
 
@@ -128,8 +147,10 @@ public class Table {
      * @param player - the player the token belongs to.
      * @param slot   - the slot from which to remove the token.
      */
-    public void removeToken(int player, int slot) {
+    public synchronized void removeToken(int player, int slot) {
         // TODO implement
+        Integer Iplayer = player;
+        tokensOnSlot.get(slot).remove(Iplayer);
         env.ui.removeToken(player, slot);
     }
 }

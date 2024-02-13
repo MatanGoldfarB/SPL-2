@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
-import java.util.Iterator;
+import java.util.LinkedList;
 
 import bguspl.set.Env;
 
@@ -61,9 +61,10 @@ public class Player implements Runnable {
 
     private Dealer dealer;
 
-    private final List<Integer> tokens;
-    private Object lock = new Object();
+    private Object playerLock = new Object();
     private BlockingQueue<Integer> actionsQueue;
+    private boolean notified = false;
+    private boolean rulling = false;
 
     /**
      * The class constructor.
@@ -80,7 +81,6 @@ public class Player implements Runnable {
         this.id = id;
         this.human = human;
         this.dealer = dealer;
-        this.tokens = new ArrayList<>();
         this.playerThread = new Thread(this);
         this.actionsQueue = new ArrayBlockingQueue<>(3);
     }
@@ -98,23 +98,32 @@ public class Player implements Runnable {
             // TODO implement main player loop
             try {
                 Integer slot = this.actionsQueue.take();
-                if(this.tokens.contains(slot)){
-                    this.tokens.remove(slot);
+                if(table.tokensOnSlot.get(slot).contains(id)){
                     table.removeToken(id, slot);
                 }
                 else{
-                    this.tokens.add(slot);
                     this.table.placeToken(id, slot);
                 }
-                if(this.tokens.size() == 3){
+                if(numTokensPlaced() == 3){
                     //tell dealer to check
-
-                    // delete all tokens
-                    Iterator<Integer> iterator = this.tokens.iterator();
-                    while (iterator.hasNext()) {
-                        Integer element = iterator.next();
-                        iterator.remove();
-                        table.removeToken(id, element);
+                    dealer.notifyDealer(id);
+                    synchronized(playerLock){
+                        try {
+                            // Wait for notification from Dealer
+                            while (!notified) {
+                                playerLock.wait();
+                            }
+                            // Perform action upon notification
+                            if(this.rulling){
+                                point();
+                            }
+                            else{
+                                penalty();
+                            }
+                            actionsQueue.clear();
+                            // Reset the notification flag
+                            notified = false;
+                        } catch (InterruptedException ignored) {}
                     }
                 }
             } catch (InterruptedException ignored) {}
@@ -148,6 +157,7 @@ public class Player implements Runnable {
     public void terminate() {
         // TODO implement
         this.terminate=true;
+        playerThread.interrupt();
     }
 
     /**
@@ -172,9 +182,16 @@ public class Player implements Runnable {
      */
     public void point() {
         // TODO implement
-
         int ignored = table.countCards(); // this part is just for demonstration in the unit tests
         env.ui.setScore(id, ++score);
+        long freezeTimeLeft = env.config.pointFreezeMillis;
+        try {
+            while(freezeTimeLeft>=0){
+                Thread.sleep(1000);
+                env.ui.setFreeze(id, freezeTimeLeft);
+                freezeTimeLeft -= 1000;
+            }
+        } catch (InterruptedException e) {}
     }
 
     /**
@@ -182,6 +199,14 @@ public class Player implements Runnable {
      */
     public void penalty() {
         // TODO implement
+        long freezeTimeLeft = env.config.penaltyFreezeMillis;
+        try {
+            while(freezeTimeLeft>=0){
+                Thread.sleep(1000);
+                env.ui.setFreeze(id, freezeTimeLeft);
+                freezeTimeLeft -= 1000;
+            }
+        } catch (InterruptedException e) {}
     }
 
     public int score() {
@@ -191,5 +216,27 @@ public class Player implements Runnable {
     public void createThread() {
         this.playerThread = new Thread(this);
         this.playerThread.start();
+    }
+
+    public void notifyPlayer(boolean rulling) {
+        synchronized (playerLock) {
+            this.rulling = rulling;
+            notified = true;
+            playerLock.notifyAll(); // Notify all waiting players
+        }
+    }
+
+    public int getId(){
+        return id;
+    }
+
+    public int numTokensPlaced(){
+        int count = 0;
+        for(LinkedList<Integer> slot : table.tokensOnSlot){
+            if (slot.contains(id)) {
+                count++;
+            }
+        }
+        return count;
     }
 }

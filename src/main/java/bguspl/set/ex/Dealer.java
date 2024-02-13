@@ -5,9 +5,15 @@ import bguspl.set.Env;
 import java.text.CollationKey;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 
 /**
  * This class manages the dealer's threads and data
@@ -41,6 +47,7 @@ public class Dealer implements Runnable {
     private long reshuffleTime = Long.MAX_VALUE;
 
     private boolean notify;
+    private BlockingQueue<Integer> playersWaitBlockingQueue;
 
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
@@ -48,6 +55,7 @@ public class Dealer implements Runnable {
         this.players = players;
         deck = IntStream.range(0, env.config.deckSize).boxed().collect(Collectors.toList());
         this.notify = false;
+        this.playersWaitBlockingQueue = new LinkedBlockingQueue<>();
     }
 
     /**
@@ -107,6 +115,11 @@ public class Dealer implements Runnable {
      */
     private void removeCardsFromTable() {
         // TODO implement
+        for(int slot=0 ; slot<env.config.tableSize; slot++){
+            if(table.shouldRemoveCard[slot]){
+                table.removeCard(slot);
+            }
+        }
     }
 
     /**
@@ -134,11 +147,23 @@ public class Dealer implements Runnable {
      */
     private synchronized void sleepUntilWokenOrTimeout() {
         // TODO implement
+        long timer = System.currentTimeMillis();
+        Integer playerId = -1;
         try {
-            this.wait(1000);
+            playerId = this.playersWaitBlockingQueue.poll(1000, TimeUnit.MILLISECONDS);
         } catch (InterruptedException ignored) {}
         if(this.notify){
             //check and act
+            Player player =idToPlayer(playerId);
+            if(checkSet(playerId)){
+                //point
+                notifyPlayer(player, true);
+            }
+            else{
+                //penalize
+
+                notifyPlayer(player, false);
+            }
         }
         this.notify = false;
     }
@@ -173,8 +198,51 @@ public class Dealer implements Runnable {
         // TODO implement
     }
 
-    public void notifyThread() {
+    public void notifyDealer(int playerId) {
         this.notify = true;
-        notify();
+        try {
+            playersWaitBlockingQueue.add(playerId);
+        } catch (IllegalStateException ignored) {}
+    }
+
+    public Player idToPlayer(int id) {
+        for(Player player : players){
+            if(player.getId() == id){
+                return player;
+            }
+        }
+        return null;
+    }
+
+    public boolean checkSet(int player) {
+        int[] set = getSet(player);
+        if(env.util.testSet(set)){
+            table.shouldRemoveCard[table.cardToSlot[set[0]]] = true;
+            table.shouldRemoveCard[table.cardToSlot[set[1]]] = true;
+            table.shouldRemoveCard[table.cardToSlot[set[2]]] = true;
+            return true;
+        }
+        table.removeToken(player, table.cardToSlot[set[0]]);
+        table.removeToken(player, table.cardToSlot[set[1]]);
+        table.removeToken(player, table.cardToSlot[set[2]]);
+        return false;
+    }
+
+    private void notifyPlayer(Player player, boolean rulling) {
+        player.notifyPlayer(rulling);
+    }
+
+    private int[] getSet(int player){
+        int[] set = new int[3];
+        int index=0;
+        int slotIndex = 0;
+        for(LinkedList<Integer> slot : table.tokensOnSlot){
+            if (slot.contains(player)) {
+                set[index] = table.slotToCard[slotIndex];
+                index++;
+            }
+            slotIndex++;
+        }
+        return set;
     }
 }
