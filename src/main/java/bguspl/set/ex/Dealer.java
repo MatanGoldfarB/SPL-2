@@ -3,6 +3,7 @@ package bguspl.set.ex;
 import bguspl.set.Env;
 
 import java.text.CollationKey;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -48,6 +49,7 @@ public class Dealer implements Runnable {
 
     private BlockingQueue<Integer> playersWaitBlockingQueue;
     private static final int SLEEP_DURATION = 1000;
+    private long timer = 0;
 
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
@@ -85,7 +87,17 @@ public class Dealer implements Runnable {
             sleepUntilWokenOrTimeout();
             updateTimerDisplay(false);
             removeCardsFromTable();
-            placeCardsOnTable();
+            if(placeCardsOnTable() && env.config.turnTimeoutMillis <= 0){
+                List<Integer> cardOnTable = new ArrayList<>();
+                for (Integer card : table.slotToCard) {
+                    if (card != null) {
+                        cardOnTable.add(card);
+                    }
+                }
+                if(env.util.findSets(cardOnTable, 1).size() == 0){
+                    reshuffleTime = System.currentTimeMillis();
+                }
+            }
         }
     }
 
@@ -125,7 +137,7 @@ public class Dealer implements Runnable {
     /**
      * Check if any cards can be removed from the deck and placed on the table.
      */
-    private void placeCardsOnTable() {
+    private boolean placeCardsOnTable() {
         boolean placed = false;
         for(int i=0 ; i<(table.slotToCard).length ; i++){
             if(!deck.isEmpty() && table.slotToCard[i] == null){
@@ -138,6 +150,7 @@ public class Dealer implements Runnable {
         if(placed){
             updateTimerDisplay(true);
         }
+        return placed;
     }
 
     /**
@@ -167,10 +180,18 @@ public class Dealer implements Runnable {
      * Reset and/or update the countdown and the countdown display.
      */
     private void updateTimerDisplay(boolean reset) {
-        if(reset){
-            reshuffleTime = System.currentTimeMillis() + env.config.turnTimeoutMillis;
+        if(env.config.turnTimeoutMillis > 0){
+            if(reset){
+                reshuffleTime = System.currentTimeMillis() + env.config.turnTimeoutMillis;
+            }
+            env.ui.setCountdown(reshuffleTime-System.currentTimeMillis(), false);
+        } else if(env.config.turnTimeoutMillis == 0){
+            if(reset){
+                reshuffleTime = Long.MAX_VALUE;
+                timer = System.currentTimeMillis();
+            }
+            env.ui.setCountdown(System.currentTimeMillis()-timer, false);
         }
-        env.ui.setCountdown(reshuffleTime-System.currentTimeMillis(), false);
     }
 
     /**

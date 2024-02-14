@@ -172,7 +172,6 @@ public class Player implements Runnable {
         // TODO implement
         try {
             actionsQueue.put(slot);
-            
         } catch (InterruptedException ignored) {}
     }
 
