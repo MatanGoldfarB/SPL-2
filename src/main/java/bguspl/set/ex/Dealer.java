@@ -47,6 +47,7 @@ public class Dealer implements Runnable {
     private long reshuffleTime = Long.MAX_VALUE;
 
     private BlockingQueue<Integer> playersWaitBlockingQueue;
+    private static final int SLEEP_DURATION = 1000;
 
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
@@ -73,9 +74,6 @@ public class Dealer implements Runnable {
             removeAllCardsFromTable();
         }
         announceWinners();
-        if(!terminate){
-            terminate();
-        }
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
     }
 
@@ -96,7 +94,8 @@ public class Dealer implements Runnable {
      */
     public void terminate() {
         // TODO implement
-        for(Player player : players){
+        for (int i = env.config.players - 1; i >= 0; i--) {
+            Player player = players[i];
             player.terminate();
         }
         this.terminate = true;
@@ -148,7 +147,7 @@ public class Dealer implements Runnable {
         // TODO implement
         Integer playerId = null;
         try {
-            playerId = this.playersWaitBlockingQueue.poll(1000, TimeUnit.MILLISECONDS);
+            playerId = this.playersWaitBlockingQueue.poll(SLEEP_DURATION, TimeUnit.MILLISECONDS);
         } catch (InterruptedException ignored) {}
         if(playerId != null){
             //check and act
@@ -192,7 +191,9 @@ public class Dealer implements Runnable {
      */
     private void announceWinners() {
         // TODO implement
-        terminate();
+        if(!terminate){
+            terminate();
+        }
         LinkedList<Integer> playersId = new LinkedList<>();
         int maxPoints = 0;
         for(Player player : players){
@@ -205,7 +206,6 @@ public class Dealer implements Runnable {
             }
         }
         int[] playersArr = playersId.stream().mapToInt(Integer::intValue).toArray();
-        System.out.println(playersArr.length);
         env.ui.announceWinner(playersArr);
         try {
             Thread.sleep(env.config.endGamePauseMillies);

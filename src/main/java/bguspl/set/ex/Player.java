@@ -4,6 +4,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
@@ -63,6 +64,7 @@ public class Player implements Runnable {
 
     private BlockingQueue<Integer> actionsQueue;
     private boolean rulling = false;
+    private static final int SLEEP_DURATION = 1000;
 
     /**
      * The class constructor.
@@ -79,7 +81,7 @@ public class Player implements Runnable {
         this.id = id;
         this.human = human;
         this.dealer = dealer;
-        this.actionsQueue = new ArrayBlockingQueue<>(3);
+        this.actionsQueue = new ArrayBlockingQueue<>(env.config.featureSize);
     }
 
     /**
@@ -99,9 +101,9 @@ public class Player implements Runnable {
                     table.removeToken(id, slot);
                 }
                 else{
-                    if(numTokensPlaced() != 3){
+                    if(numTokensPlaced() != env.config.featureSize){
                         this.table.placeToken(id, slot);
-                        if(numTokensPlaced() == 3){
+                        if(numTokensPlaced() == env.config.featureSize){
                             //tell dealer to check
                             dealer.notifyDealer(id);
                             synchronized(this){
@@ -134,11 +136,11 @@ public class Player implements Runnable {
         // note: this is a very, very smart AI (!)
         aiThread = new Thread(() -> {
             env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
+            Random rnd = new Random();
             while (!terminate) {
                 // TODO implement player key press simulator
-                try {
-                    synchronized (this) { wait(); }
-                } catch (InterruptedException ignored) {}
+                int randomSlot = rnd.nextInt(env.config.tableSize);
+                keyPressed(randomSlot);
             }
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
         }, "computer-" + id);
@@ -151,7 +153,14 @@ public class Player implements Runnable {
     public void terminate() {
         // TODO implement
         this.terminate=true;
-        playerThread.interrupt();
+        try {
+            if (!human) {
+                aiThread.interrupt();   
+                aiThread.join();
+            }
+            playerThread.interrupt();
+            playerThread.join();
+        } catch (InterruptedException ignored) {}
     }
 
     /**
@@ -163,6 +172,7 @@ public class Player implements Runnable {
         // TODO implement
         try {
             actionsQueue.put(slot);
+            
         } catch (InterruptedException ignored) {}
     }
 
@@ -179,9 +189,9 @@ public class Player implements Runnable {
         long freezeTimeLeft = env.config.pointFreezeMillis;
         try {
             while(freezeTimeLeft>=0){
-                Thread.sleep(1000);
+                Thread.sleep(SLEEP_DURATION);
                 env.ui.setFreeze(id, freezeTimeLeft);
-                freezeTimeLeft -= 1000;
+                freezeTimeLeft -= SLEEP_DURATION;
             }
         } catch (InterruptedException e) {}
     }
@@ -194,9 +204,9 @@ public class Player implements Runnable {
         long freezeTimeLeft = env.config.penaltyFreezeMillis;
         try {
             while(freezeTimeLeft>=0){
-                Thread.sleep(1000);
+                Thread.sleep(SLEEP_DURATION);
                 env.ui.setFreeze(id, freezeTimeLeft);
-                freezeTimeLeft -= 1000;
+                freezeTimeLeft -= SLEEP_DURATION;
             }
         } catch (InterruptedException e) {}
     }
