@@ -138,8 +138,10 @@ public class Table {
      */
     public synchronized void placeToken(int player, int slot) {
         // TODO implement
-        tokensOnSlot.get(slot).add(player);
-        env.ui.placeToken(player, slot);
+        if(slotToCard[slot] != null){
+            tokensOnSlot.get(slot).add(player);
+            env.ui.placeToken(player, slot);
+        }
     }
 
     /**

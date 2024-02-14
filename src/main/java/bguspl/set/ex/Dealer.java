@@ -46,7 +46,6 @@ public class Dealer implements Runnable {
      */
     private long reshuffleTime = Long.MAX_VALUE;
 
-    private boolean notify;
     private BlockingQueue<Integer> playersWaitBlockingQueue;
 
     public Dealer(Env env, Table table, Player[] players) {
@@ -54,7 +53,6 @@ public class Dealer implements Runnable {
         this.table = table;
         this.players = players;
         deck = IntStream.range(0, env.config.deckSize).boxed().collect(Collectors.toList());
-        this.notify = false;
         this.playersWaitBlockingQueue = new LinkedBlockingQueue<>();
     }
 
@@ -75,6 +73,9 @@ public class Dealer implements Runnable {
             removeAllCardsFromTable();
         }
         announceWinners();
+        if(!terminate){
+            terminate();
+        }
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
     }
 
@@ -127,14 +128,12 @@ public class Dealer implements Runnable {
      */
     private void placeCardsOnTable() {
         boolean placed = false;
-        if(!deck.isEmpty()){
-            for(int i=0 ; i<(table.slotToCard).length ; i++){
-                if(!deck.isEmpty() && table.slotToCard[i] == null){
-                    Integer card = deck.get(0);
-                    deck.remove(0);
-                    table.placeCard(card, i);
-                    placed = true;
-                }
+        for(int i=0 ; i<(table.slotToCard).length ; i++){
+            if(!deck.isEmpty() && table.slotToCard[i] == null){
+                Integer card = deck.get(0);
+                deck.remove(0);
+                table.placeCard(card, i);
+                placed = true;
             }
         }
         if(placed){
@@ -147,25 +146,22 @@ public class Dealer implements Runnable {
      */
     private synchronized void sleepUntilWokenOrTimeout() {
         // TODO implement
-        long timer = System.currentTimeMillis();
-        Integer playerId = -1;
+        Integer playerId = null;
         try {
             playerId = this.playersWaitBlockingQueue.poll(1000, TimeUnit.MILLISECONDS);
         } catch (InterruptedException ignored) {}
-        if(this.notify){
+        if(playerId != null){
             //check and act
             Player player =idToPlayer(playerId);
             if(checkSet(playerId)){
                 //point
-                notifyPlayer(player, true);
+                player.notifyPlayer(true);
             }
             else{
                 //penalize
-
-                notifyPlayer(player, false);
+                player.notifyPlayer(false);
             }
         }
-        this.notify = false;
     }
 
     /**
@@ -196,10 +192,27 @@ public class Dealer implements Runnable {
      */
     private void announceWinners() {
         // TODO implement
+        terminate();
+        LinkedList<Integer> playersId = new LinkedList<>();
+        int maxPoints = 0;
+        for(Player player : players){
+            if(player.score() > maxPoints){
+                playersId.clear();
+                playersId.add(player.id);
+                maxPoints = player.score();
+            } else if(player.score() == maxPoints){
+                playersId.add(player.id);
+            }
+        }
+        int[] playersArr = playersId.stream().mapToInt(Integer::intValue).toArray();
+        System.out.println(playersArr.length);
+        env.ui.announceWinner(playersArr);
+        try {
+            Thread.sleep(env.config.endGamePauseMillies);
+        } catch (Exception e) {}
     }
 
     public void notifyDealer(int playerId) {
-        this.notify = true;
         try {
             playersWaitBlockingQueue.add(playerId);
         } catch (IllegalStateException ignored) {}
@@ -222,14 +235,7 @@ public class Dealer implements Runnable {
             table.shouldRemoveCard[table.cardToSlot[set[2]]] = true;
             return true;
         }
-        table.removeToken(player, table.cardToSlot[set[0]]);
-        table.removeToken(player, table.cardToSlot[set[1]]);
-        table.removeToken(player, table.cardToSlot[set[2]]);
         return false;
-    }
-
-    private void notifyPlayer(Player player, boolean rulling) {
-        player.notifyPlayer(rulling);
     }
 
     private int[] getSet(int player){

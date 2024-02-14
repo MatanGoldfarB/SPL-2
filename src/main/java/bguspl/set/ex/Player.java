@@ -61,9 +61,7 @@ public class Player implements Runnable {
 
     private Dealer dealer;
 
-    private Object playerLock = new Object();
     private BlockingQueue<Integer> actionsQueue;
-    private boolean notified = false;
     private boolean rulling = false;
 
     /**
@@ -81,7 +79,6 @@ public class Player implements Runnable {
         this.id = id;
         this.human = human;
         this.dealer = dealer;
-        this.playerThread = new Thread(this);
         this.actionsQueue = new ArrayBlockingQueue<>(3);
     }
 
@@ -102,28 +99,25 @@ public class Player implements Runnable {
                     table.removeToken(id, slot);
                 }
                 else{
-                    this.table.placeToken(id, slot);
-                }
-                if(numTokensPlaced() == 3){
-                    //tell dealer to check
-                    dealer.notifyDealer(id);
-                    synchronized(playerLock){
-                        try {
-                            // Wait for notification from Dealer
-                            while (!notified) {
-                                playerLock.wait();
+                    if(numTokensPlaced() != 3){
+                        this.table.placeToken(id, slot);
+                        if(numTokensPlaced() == 3){
+                            //tell dealer to check
+                            dealer.notifyDealer(id);
+                            synchronized(this){
+                                // Wait for notification from Dealer
+                                this.wait();
+                                // Perform action upon notification
+                                if(this.rulling){
+                                    point();
+                                }
+                                else{
+                                    penalty();
+                                }
+                                actionsQueue.clear();
+                                // Reset the notification flag
                             }
-                            // Perform action upon notification
-                            if(this.rulling){
-                                point();
-                            }
-                            else{
-                                penalty();
-                            }
-                            actionsQueue.clear();
-                            // Reset the notification flag
-                            notified = false;
-                        } catch (InterruptedException ignored) {}
+                        }
                     }
                 }
             } catch (InterruptedException ignored) {}
@@ -169,9 +163,7 @@ public class Player implements Runnable {
         // TODO implement
         try {
             actionsQueue.put(slot);
-        } catch (Exception e) {
-            // TODO: handle exception
-        }
+        } catch (InterruptedException ignored) {}
     }
 
     /**
@@ -219,10 +211,9 @@ public class Player implements Runnable {
     }
 
     public void notifyPlayer(boolean rulling) {
-        synchronized (playerLock) {
+        synchronized (this) {
             this.rulling = rulling;
-            notified = true;
-            playerLock.notifyAll(); // Notify all waiting players
+            this.notifyAll(); // Notify all waiting players
         }
     }
 
