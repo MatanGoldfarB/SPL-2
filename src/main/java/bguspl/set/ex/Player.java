@@ -94,7 +94,6 @@ public class Player implements Runnable {
         if (!human) createArtificialIntelligence();
 
         while (!terminate) {
-            // TODO implement main player loop
             try {
                 Integer slot = this.actionsQueue.take();
                 if(table.tokensOnSlot.get(slot).contains(id)){
@@ -143,7 +142,6 @@ public class Player implements Runnable {
             env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
             Random rnd = new Random();
             while (!terminate) {
-                // TODO implement player key press simulator
                 int randomSlot = rnd.nextInt(env.config.tableSize);
                 keyPressed(randomSlot);
             }
@@ -156,7 +154,6 @@ public class Player implements Runnable {
      * Called when the game should be terminated.
      */
     public void terminate() {
-        // TODO implement
         this.terminate=true;
         try {
             if (!human) {
@@ -174,7 +171,6 @@ public class Player implements Runnable {
      * @param slot - the slot corresponding to the key pressed.
      */
     public void keyPressed(int slot) {
-        // TODO implement
         try {
             actionsQueue.put(slot);
         } catch (InterruptedException ignored) {}
@@ -187,7 +183,6 @@ public class Player implements Runnable {
      * @post - the player's score is updated in the ui.
      */
     public void point() {
-        // TODO implement
         int ignored = table.countCards(); // this part is just for demonstration in the unit tests
         env.ui.setScore(id, ++score);
         long freezeTimeLeft = env.config.pointFreezeMillis;
@@ -204,7 +199,6 @@ public class Player implements Runnable {
      * Penalize a player and perform other related actions.
      */
     public void penalty() {
-        // TODO implement
         long freezeTimeLeft = env.config.penaltyFreezeMillis;
         try {
             while(freezeTimeLeft>=0){

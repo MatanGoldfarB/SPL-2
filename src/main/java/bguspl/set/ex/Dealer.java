@@ -106,7 +106,6 @@ public class Dealer implements Runnable {
      * Called when the game should be terminated.
      */
     public void terminate() {
-        // TODO implement
         for (int i = env.config.players - 1; i >= 0; i--) {
             Player player = players[i];
             player.terminate();
@@ -127,7 +126,6 @@ public class Dealer implements Runnable {
      * Checks cards should be removed from the table and removes them.
      */
     private void removeCardsFromTable() {
-        // TODO implement
         synchronized(table){
             for(int slot=0 ; slot<env.config.tableSize; slot++){
                 if(table.shouldRemoveCard[slot] && table.slotToCard[slot] != null){
@@ -169,7 +167,6 @@ public class Dealer implements Runnable {
      * Sleep for a fixed amount of time or until the thread is awakened for some purpose.
      */
     private synchronized void sleepUntilWokenOrTimeout() {
-        // TODO implement
         Integer playerId = null;
         try {
             playerId = this.playersWaitBlockingQueue.poll(SLEEP_DURATION, TimeUnit.MILLISECONDS);
@@ -236,7 +233,6 @@ public class Dealer implements Runnable {
      * Check who is/are the winner/s and displays them.
      */
     private void announceWinners() {
-        // TODO implement
         if(!terminate){
             terminate();
         }
