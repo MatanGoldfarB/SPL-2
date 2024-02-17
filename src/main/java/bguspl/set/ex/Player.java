@@ -63,7 +63,7 @@ public class Player implements Runnable {
     private Dealer dealer;
 
     private BlockingQueue<Integer> actionsQueue;
-    private boolean rulling = false;
+    private int rulling = -1;
     private static final int SLEEP_DURATION = 1000;
 
     /**
@@ -105,19 +105,24 @@ public class Player implements Runnable {
                         this.table.placeToken(id, slot);
                         if(numTokensPlaced() == env.config.featureSize){
                             //tell dealer to check
-                            dealer.notifyDealer(id);
                             synchronized(this){
                                 // Wait for notification from Dealer
+                                dealer.notifyDealer(id);
+                                env.logger.info("player " + (id+1) + " wait for dealer.");
                                 this.wait();
+                                env.logger.info("player " + (id+1) + " got checked.");
                                 // Perform action upon notification
-                                if(this.rulling){
+                                if(this.rulling == 1){
                                     point();
-                                }
-                                else{
+                                } else if(this.rulling == 0){
                                     penalty();
+                                    
                                 }
-                                actionsQueue.clear();
+                                if(human){
+                                    actionsQueue.clear();
+                                }
                                 // Reset the notification flag
+                                this.rulling = -1;
                             }
                         }
                     }
@@ -219,10 +224,10 @@ public class Player implements Runnable {
         this.playerThread.start();
     }
 
-    public void notifyPlayer(boolean rulling) {
+    public void notifyPlayer(int rulling) {
         synchronized (this) {
             this.rulling = rulling;
-            this.notifyAll(); // Notify all waiting players
+            this.notify(); // Notify all waiting players
         }
     }
 

@@ -52,9 +52,7 @@ public class Table {
             tokensOnSlot.add(new LinkedList<>());
         }
         this.shouldRemoveCard = new Boolean[env.config.tableSize];
-        for (int i = 0; i < shouldRemoveCard.length; i++) {
-            shouldRemoveCard[i] = false;
-        }
+        Arrays.fill(shouldRemoveCard, false);
     }
 
 

@@ -4,6 +4,7 @@ import bguspl.set.Env;
 
 import java.text.CollationKey;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -127,9 +128,21 @@ public class Dealer implements Runnable {
      */
     private void removeCardsFromTable() {
         // TODO implement
-        for(int slot=0 ; slot<env.config.tableSize; slot++){
-            if(table.shouldRemoveCard[slot]){
-                table.removeCard(slot);
+        synchronized(table){
+            for(int slot=0 ; slot<env.config.tableSize; slot++){
+                if(table.shouldRemoveCard[slot] && table.slotToCard[slot] != null){
+                    LinkedList<Integer> tokens = table.tokensOnSlot.get(slot);
+                    for(Integer player : tokens){
+                        if(playersWaitBlockingQueue.remove(player)){
+                            env.logger.info("dealer notifies player " + (player+1));
+                            idToPlayer(player).notifyPlayer(-1);
+                        }
+                    }
+                    table.removeCard(slot);
+                }
+                else{
+                    table.shouldRemoveCard[slot] = false;
+                }
             }
         }
     }
@@ -141,8 +154,7 @@ public class Dealer implements Runnable {
         boolean placed = false;
         for(int i=0 ; i<(table.slotToCard).length ; i++){
             if(!deck.isEmpty() && table.slotToCard[i] == null){
-                Integer card = deck.get(0);
-                deck.remove(0);
+                Integer card = deck.remove(0);
                 table.placeCard(card, i);
                 placed = true;
             }
@@ -161,17 +173,21 @@ public class Dealer implements Runnable {
         Integer playerId = null;
         try {
             playerId = this.playersWaitBlockingQueue.poll(SLEEP_DURATION, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException ignored) {}
+        } catch (InterruptedException ignored) {
+            System.out.println("i got interupted and lost player " + playerId);
+        }
         if(playerId != null){
             //check and act
             Player player =idToPlayer(playerId);
             if(checkSet(playerId)){
                 //point
-                player.notifyPlayer(true);
+                env.logger.info("dealer notifies player " + (playerId+1));
+                player.notifyPlayer(1);
             }
             else{
                 //penalize
-                player.notifyPlayer(false);
+                env.logger.info("dealer notifies player " + (playerId+1));
+                player.notifyPlayer(0);
             }
         }
     }
@@ -198,13 +214,22 @@ public class Dealer implements Runnable {
      * Returns all the cards from the table to the deck.
      */
     private void removeAllCardsFromTable() {
+        Arrays.fill(table.shouldRemoveCard, true);
+        for(int i=0 ; i<(table.slotToCard).length ; i++){
+            if(table.slotToCard[i] != null){
+                Integer card = table.slotToCard[i];
+                deck.add(card);
+            }
+        }
+        removeCardsFromTable();
+        /* 
         for(int i=0 ; i<(table.slotToCard).length ; i++){
             if(table.slotToCard[i] != null){
                 Integer card = table.slotToCard[i];
                 deck.add(card);
                 table.removeCard(i);
             }
-        }
+        } */
     }
 
     /**
@@ -230,7 +255,7 @@ public class Dealer implements Runnable {
         env.ui.announceWinner(playersArr);
         try {
             Thread.sleep(env.config.endGamePauseMillies);
-        } catch (Exception e) {}
+        } catch (InterruptedException ignored) {}
     }
 
     public void notifyDealer(int playerId) {
@@ -249,14 +274,16 @@ public class Dealer implements Runnable {
     }
 
     public boolean checkSet(int player) {
-        int[] set = getSet(player);
-        if(env.util.testSet(set)){
-            table.shouldRemoveCard[table.cardToSlot[set[0]]] = true;
-            table.shouldRemoveCard[table.cardToSlot[set[1]]] = true;
-            table.shouldRemoveCard[table.cardToSlot[set[2]]] = true;
-            return true;
+        synchronized(table){
+            int[] set = getSet(player);
+            if(env.util.testSet(set)){
+                table.shouldRemoveCard[table.cardToSlot[set[0]]] = true;
+                table.shouldRemoveCard[table.cardToSlot[set[1]]] = true;
+                table.shouldRemoveCard[table.cardToSlot[set[2]]] = true;
+                return true;
+            }
+            return false;
         }
-        return false;
     }
 
     private int[] getSet(int player){
