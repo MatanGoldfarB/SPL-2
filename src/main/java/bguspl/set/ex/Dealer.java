@@ -127,6 +127,7 @@ public class Dealer implements Runnable {
      */
     private void removeCardsFromTable() {
         synchronized(table){
+            boolean removed = false;
             for(int slot=0 ; slot<env.config.tableSize; slot++){
                 if(table.shouldRemoveCard[slot] && table.slotToCard[slot] != null){
                     LinkedList<Integer> tokens = table.tokensOnSlot.get(slot);
@@ -136,10 +137,14 @@ public class Dealer implements Runnable {
                         }
                     }
                     table.removeCard(slot);
+                    removed = true;
                 }
                 else{
                     table.shouldRemoveCard[slot] = false;
                 }
+            }
+            if (removed) {
+                updateTimerDisplay(true);
             }
         }
     }
