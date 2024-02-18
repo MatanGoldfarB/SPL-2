@@ -107,15 +107,12 @@ public class Player implements Runnable {
                             synchronized(this){
                                 // Wait for notification from Dealer
                                 dealer.notifyDealer(id);
-                                env.logger.info("player " + (id+1) + " wait for dealer.");
                                 this.wait();
-                                env.logger.info("player " + (id+1) + " got checked.");
                                 // Perform action upon notification
                                 if(this.rulling == 1){
                                     point();
                                 } else if(this.rulling == 0){
                                     penalty();
-                                    
                                 }
                                 if(human){
                                     actionsQueue.clear();
