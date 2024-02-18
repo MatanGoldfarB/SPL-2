@@ -188,10 +188,11 @@ public class Player implements Runnable {
         long freezeTimeLeft = env.config.pointFreezeMillis;
         try {
             while(freezeTimeLeft>=0){
-                Thread.sleep(SLEEP_DURATION);
                 env.ui.setFreeze(id, freezeTimeLeft);
+                Thread.sleep(SLEEP_DURATION);
                 freezeTimeLeft -= SLEEP_DURATION;
             }
+            env.ui.setFreeze(id, freezeTimeLeft);
         } catch (InterruptedException e) {}
     }
 
@@ -201,11 +202,12 @@ public class Player implements Runnable {
     public void penalty() {
         long freezeTimeLeft = env.config.penaltyFreezeMillis;
         try {
-            while(freezeTimeLeft>=0){
-                Thread.sleep(SLEEP_DURATION);
+            while(freezeTimeLeft>0){
                 env.ui.setFreeze(id, freezeTimeLeft);
+                Thread.sleep(SLEEP_DURATION);
                 freezeTimeLeft -= SLEEP_DURATION;
             }
+            env.ui.setFreeze(id, freezeTimeLeft);
         } catch (InterruptedException e) {}
     }
 
