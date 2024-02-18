@@ -132,7 +132,6 @@ public class Dealer implements Runnable {
                     LinkedList<Integer> tokens = table.tokensOnSlot.get(slot);
                     for(Integer player : tokens){
                         if(playersWaitBlockingQueue.remove(player)){
-                            env.logger.info("dealer notifies player " + (player+1));
                             idToPlayer(player).notifyPlayer(-1);
                         }
                     }
@@ -178,12 +177,10 @@ public class Dealer implements Runnable {
             Player player =idToPlayer(playerId);
             if(checkSet(playerId)){
                 //point
-                env.logger.info("dealer notifies player " + (playerId+1));
                 player.notifyPlayer(1);
             }
             else{
                 //penalize
-                env.logger.info("dealer notifies player " + (playerId+1));
                 player.notifyPlayer(0);
             }
         }
