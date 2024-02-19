@@ -148,7 +148,7 @@ public class Player implements Runnable {
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
         }, "computer-" + id);
         synchronized(dealer.threadsCreated){
-            dealer.threadsCreated.push(aiThread);
+            dealer.threadsCreated.push(this);
             env.logger.info("thread " + aiThread.getName() + " created.");
         }
         aiThread.start();
@@ -158,17 +158,25 @@ public class Player implements Runnable {
      * Called when the game should be terminated.
      */
     public void terminate() {
+        try {        
         if(!human){
             if(!this.terminateAi){
                 this.terminateAi=true;
+                this.aiThread.interrupt();
+                this.aiThread.join();
             }
             else{
                 this.terminate=true;
+                this.playerThread.interrupt();
+                this.playerThread.join();
             }
         }
         else{
             this.terminate=true;
+            this.playerThread.interrupt();
+            this.playerThread.join();
         }
+        } catch (InterruptedException ignored) {}
     }
 
     /**
@@ -224,7 +232,7 @@ public class Player implements Runnable {
     public void createThread() {
         this.playerThread = new Thread(this);
         synchronized(dealer.threadsCreated){
-            dealer.threadsCreated.push(playerThread);
+            dealer.threadsCreated.push(this);
             env.logger.info("thread " + playerThread.getName() + " created.");
         }
         this.playerThread.start();

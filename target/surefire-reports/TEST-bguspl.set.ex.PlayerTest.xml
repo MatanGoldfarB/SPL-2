@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="bguspl.set.ex.PlayerTest" time="2.305" tests="1" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="bguspl.set.ex.PlayerTest" time="2.304" tests="1" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -12,7 +12,7 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="IL"/>
     <property name="sun.boot.library.path" value="/opt/homebrew/Cellar/openjdk/21.0.2/libexec/openjdk.jdk/Contents/Home/lib"/>
-    <property name="sun.java.command" value="/Users/matangoldfarb/Desktop/VS-projects/Set_Card_Game/target/surefire/surefirebooter-20240218132514392_3.jar /Users/matangoldfarb/Desktop/VS-projects/Set_Card_Game/target/surefire 2024-02-18T13-25-14_343-jvmRun1 surefire-20240218132514392_1tmp surefire_0-20240218132514392_2tmp"/>
+    <property name="sun.java.command" value="/Users/matangoldfarb/Desktop/VS-projects/Set_Card_Game/target/surefire/surefirebooter-20240219171406582_3.jar /Users/matangoldfarb/Desktop/VS-projects/Set_Card_Game/target/surefire 2024-02-19T17-14-06_534-jvmRun1 surefire-20240219171406582_1tmp surefire_0-20240219171406582_2tmp"/>
     <property name="http.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="/Users/matangoldfarb/Desktop/VS-projects/Set_Card_Game/target/test-classes:/Users/matangoldfarb/Desktop/VS-projects/Set_Card_Game/target/classes:/Users/matangoldfarb/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.9.1/junit-jupiter-engine-5.9.1.jar:/Users/matangoldfarb/.m2/repository/org/junit/platform/junit-platform-engine/1.9.1/junit-platform-engine-1.9.1.jar:/Users/matangoldfarb/.m2/repository/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.jar:/Users/matangoldfarb/.m2/repository/org/junit/platform/junit-platform-commons/1.9.1/junit-platform-commons-1.9.1.jar:/Users/matangoldfarb/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.9.1/junit-jupiter-api-5.9.1.jar:/Users/matangoldfarb/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/matangoldfarb/.m2/repository/org/mockito/mockito-core/4.9.0/mockito-core-4.9.0.jar:/Users/matangoldfarb/.m2/repository/net/bytebuddy/byte-buddy/1.12.16/byte-buddy-1.12.16.jar:/Users/matangoldfarb/.m2/repository/net/bytebuddy/byte-buddy-agent/1.12.16/byte-buddy-agent-1.12.16.jar:/Users/matangoldfarb/.m2/repository/org/objenesis/objenesis/3.3/objenesis-3.3.jar:/Users/matangoldfarb/.m2/repository/org/mockito/mockito-junit-jupiter/4.9.0/mockito-junit-jupiter-4.9.0.jar:"/>
@@ -29,7 +29,7 @@
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="apple.awt.application.name" value="ForkedBooter"/>
-    <property name="surefire.real.class.path" value="/Users/matangoldfarb/Desktop/VS-projects/Set_Card_Game/target/surefire/surefirebooter-20240218132514392_3.jar"/>
+    <property name="surefire.real.class.path" value="/Users/matangoldfarb/Desktop/VS-projects/Set_Card_Game/target/surefire/surefirebooter-20240219171406582_3.jar"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="ftp.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="java.runtime.version" value="21.0.2"/>
@@ -58,5 +58,5 @@
     <property name="socksNonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="java.class.version" value="65.0"/>
   </properties>
-  <testcase name="point" classname="bguspl.set.ex.PlayerTest" time="2.294"/>
+  <testcase name="point" classname="bguspl.set.ex.PlayerTest" time="2.292"/>
 </testsuite>

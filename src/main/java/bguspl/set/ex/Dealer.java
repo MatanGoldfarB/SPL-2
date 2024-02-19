@@ -52,7 +52,7 @@ public class Dealer implements Runnable {
     private BlockingQueue<Integer> playersWaitBlockingQueue;
     private static final int SLEEP_DURATION = 1000;
     private long timer = 0;
-    protected Stack<Thread> threadsCreated = new Stack<Thread>();
+    protected Stack<Player> threadsCreated = new Stack<Player>();
 
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
@@ -109,15 +109,8 @@ public class Dealer implements Runnable {
      */
     public void terminate() {
             while (!threadsCreated.empty()) {
-                Thread tempThread = threadsCreated.pop();
-                // terminate = true
-                String threadName = tempThread.getName();
-                int playerId = threadName.charAt(threadName.length()-1) - '0';
-                players[playerId].terminate();
-                tempThread.interrupt();
-                try {
-                    tempThread.join();
-                } catch (Exception e) {}
+                Player tempPlayer = threadsCreated.pop();
+                tempPlayer.terminate();
             }
         
         this.terminate = true;
