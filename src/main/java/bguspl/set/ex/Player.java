@@ -65,6 +65,7 @@ public class Player implements Runnable {
     private BlockingQueue<Integer> actionsQueue;
     private int rulling = -1;
     private static final int SLEEP_DURATION = 1000;
+    private volatile boolean terminateAi;
 
     /**
      * The class constructor.
@@ -138,12 +139,16 @@ public class Player implements Runnable {
         aiThread = new Thread(() -> {
             env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
             Random rnd = new Random();
-            while (!terminate) {
+            while (!terminateAi) {
                 int randomSlot = rnd.nextInt(env.config.tableSize);
                 keyPressed(randomSlot);
             }
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
         }, "computer-" + id);
+        synchronized(dealer.threadsCreated){
+            dealer.threadsCreated.push(aiThread);
+            env.logger.info("thread " + aiThread.getName() + " created.");
+        }
         aiThread.start();
     }
 
@@ -151,15 +156,17 @@ public class Player implements Runnable {
      * Called when the game should be terminated.
      */
     public void terminate() {
-        this.terminate=true;
-        try {
-            if (!human) {
-                aiThread.interrupt();   
-                aiThread.join();
+        if(!human){
+            if(!this.terminateAi){
+                this.terminateAi=true;
             }
-            playerThread.interrupt();
-            playerThread.join();
-        } catch (InterruptedException ignored) {}
+            else{
+                this.terminate=true;
+            }
+        }
+        else{
+            this.terminate=true;
+        }
     }
 
     /**
@@ -214,10 +221,17 @@ public class Player implements Runnable {
 
     public void createThread() {
         this.playerThread = new Thread(this);
+        synchronized(dealer.threadsCreated){
+            dealer.threadsCreated.push(playerThread);
+            env.logger.info("thread " + playerThread.getName() + " created.");
+        }
         this.playerThread.start();
     }
 
     public void notifyPlayer(int rulling) {
+        //rulling = 1 means a point
+        //rulling = 0 means a penalty
+        //rulling = -1 means not a full set
         synchronized (this) {
             this.rulling = rulling;
             this.notify(); // Notify all waiting players

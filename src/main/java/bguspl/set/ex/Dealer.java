@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Stack;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -51,6 +52,7 @@ public class Dealer implements Runnable {
     private BlockingQueue<Integer> playersWaitBlockingQueue;
     private static final int SLEEP_DURATION = 1000;
     private long timer = 0;
+    protected Stack<Thread> threadsCreated = new Stack<Thread>();
 
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
@@ -106,10 +108,18 @@ public class Dealer implements Runnable {
      * Called when the game should be terminated.
      */
     public void terminate() {
-        for (int i = env.config.players - 1; i >= 0; i--) {
-            Player player = players[i];
-            player.terminate();
-        }
+            while (!threadsCreated.empty()) {
+                Thread tempThread = threadsCreated.pop();
+                // terminate = true
+                String threadName = tempThread.getName();
+                int playerId = threadName.charAt(threadName.length()-1) - '0';
+                players[playerId].terminate();
+                tempThread.interrupt();
+                try {
+                    tempThread.join();
+                } catch (Exception e) {}
+            }
+        
         this.terminate = true;
     }
 
@@ -156,6 +166,7 @@ public class Dealer implements Runnable {
         boolean placed = false;
         for(int i=0 ; i<(table.slotToCard).length ; i++){
             if(!deck.isEmpty() && table.slotToCard[i] == null){
+                // removing the first card in the deck
                 Integer card = deck.remove(0);
                 table.placeCard(card, i);
                 placed = true;
@@ -175,7 +186,6 @@ public class Dealer implements Runnable {
         try {
             playerId = this.playersWaitBlockingQueue.poll(SLEEP_DURATION, TimeUnit.MILLISECONDS);
         } catch (InterruptedException ignored) {
-            System.out.println("i got interupted and lost player " + playerId);
         }
         if(playerId != null){
             //check and act
@@ -219,16 +229,8 @@ public class Dealer implements Runnable {
                 Integer card = table.slotToCard[i];
                 deck.add(card);
             }
-        }
+        }        
         removeCardsFromTable();
-        /* 
-        for(int i=0 ; i<(table.slotToCard).length ; i++){
-            if(table.slotToCard[i] != null){
-                Integer card = table.slotToCard[i];
-                deck.add(card);
-                table.removeCard(i);
-            }
-        } */
     }
 
     /**
