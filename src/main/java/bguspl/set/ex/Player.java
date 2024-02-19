@@ -63,7 +63,7 @@ public class Player implements Runnable {
     private Dealer dealer;
 
     private BlockingQueue<Integer> actionsQueue;
-    private int rulling = -1;
+    private int rulling = -2;
     private static final int SLEEP_DURATION = 1000;
     private volatile boolean terminateAi;
 
@@ -114,12 +114,14 @@ public class Player implements Runnable {
                                     point();
                                 } else if(this.rulling == 0){
                                     penalty();
+                                } else if(rulling == -2){
+                                    env.logger.info("thread " + Thread.currentThread().getName() + " woke up for no reason.");
                                 }
                                 if(human){
                                     actionsQueue.clear();
                                 }
                                 // Reset the notification flag
-                                this.rulling = -1;
+                                this.rulling = -2;
                             }
                         }
                     }
@@ -234,7 +236,7 @@ public class Player implements Runnable {
         //rulling = -1 means not a full set
         synchronized (this) {
             this.rulling = rulling;
-            this.notify(); // Notify all waiting players
+            this.notify(); // Notify waiting player
         }
     }
 
