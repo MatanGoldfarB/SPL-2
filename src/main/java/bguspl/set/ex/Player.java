@@ -63,8 +63,9 @@ public class Player implements Runnable {
     private Dealer dealer;
 
     private BlockingQueue<Integer> actionsQueue;
-    private boolean rulling = false;
+    private int rulling = -2;
     private static final int SLEEP_DURATION = 1000;
+    private volatile boolean terminateAi;
 
     /**
      * The class constructor.
@@ -94,7 +95,6 @@ public class Player implements Runnable {
         if (!human) createArtificialIntelligence();
 
         while (!terminate) {
-            // TODO implement main player loop
             try {
                 Integer slot = this.actionsQueue.take();
                 if(table.tokensOnSlot.get(slot).contains(id)){
@@ -105,19 +105,23 @@ public class Player implements Runnable {
                         this.table.placeToken(id, slot);
                         if(numTokensPlaced() == env.config.featureSize){
                             //tell dealer to check
-                            dealer.notifyDealer(id);
                             synchronized(this){
                                 // Wait for notification from Dealer
+                                dealer.notifyDealer(id);
                                 this.wait();
                                 // Perform action upon notification
-                                if(this.rulling){
+                                if(this.rulling == 1){
                                     point();
-                                }
-                                else{
+                                } else if(this.rulling == 0){
                                     penalty();
+                                } else if(rulling == -2){
+                                    env.logger.info("thread " + Thread.currentThread().getName() + " woke up for no reason.");
                                 }
-                                actionsQueue.clear();
+                                if(human){
+                                    actionsQueue.clear();
+                                }
                                 // Reset the notification flag
+                                this.rulling = -2;
                             }
                         }
                     }
@@ -137,13 +141,16 @@ public class Player implements Runnable {
         aiThread = new Thread(() -> {
             env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
             Random rnd = new Random();
-            while (!terminate) {
-                // TODO implement player key press simulator
+            while (!terminateAi) {
                 int randomSlot = rnd.nextInt(env.config.tableSize);
                 keyPressed(randomSlot);
             }
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
         }, "computer-" + id);
+        synchronized(dealer.threadsCreated){
+            dealer.threadsCreated.push(this);
+            env.logger.info("thread " + aiThread.getName() + " created.");
+        }
         aiThread.start();
     }
 
@@ -151,15 +158,24 @@ public class Player implements Runnable {
      * Called when the game should be terminated.
      */
     public void terminate() {
-        // TODO implement
-        this.terminate=true;
-        try {
-            if (!human) {
-                aiThread.interrupt();   
-                aiThread.join();
+        try {        
+        if(!human){
+            if(!this.terminateAi){
+                this.terminateAi=true;
+                this.aiThread.interrupt();
+                this.aiThread.join();
             }
-            playerThread.interrupt();
-            playerThread.join();
+            else{
+                this.terminate=true;
+                this.playerThread.interrupt();
+                this.playerThread.join();
+            }
+        }
+        else{
+            this.terminate=true;
+            this.playerThread.interrupt();
+            this.playerThread.join();
+        }
         } catch (InterruptedException ignored) {}
     }
 
@@ -169,10 +185,8 @@ public class Player implements Runnable {
      * @param slot - the slot corresponding to the key pressed.
      */
     public void keyPressed(int slot) {
-        // TODO implement
         try {
             actionsQueue.put(slot);
-            
         } catch (InterruptedException ignored) {}
     }
 
@@ -183,16 +197,16 @@ public class Player implements Runnable {
      * @post - the player's score is updated in the ui.
      */
     public void point() {
-        // TODO implement
         int ignored = table.countCards(); // this part is just for demonstration in the unit tests
         env.ui.setScore(id, ++score);
         long freezeTimeLeft = env.config.pointFreezeMillis;
         try {
             while(freezeTimeLeft>=0){
-                Thread.sleep(SLEEP_DURATION);
                 env.ui.setFreeze(id, freezeTimeLeft);
+                Thread.sleep(SLEEP_DURATION);
                 freezeTimeLeft -= SLEEP_DURATION;
             }
+            env.ui.setFreeze(id, freezeTimeLeft);
         } catch (InterruptedException e) {}
     }
 
@@ -200,14 +214,14 @@ public class Player implements Runnable {
      * Penalize a player and perform other related actions.
      */
     public void penalty() {
-        // TODO implement
         long freezeTimeLeft = env.config.penaltyFreezeMillis;
         try {
-            while(freezeTimeLeft>=0){
-                Thread.sleep(SLEEP_DURATION);
+            while(freezeTimeLeft>0){
                 env.ui.setFreeze(id, freezeTimeLeft);
+                Thread.sleep(SLEEP_DURATION);
                 freezeTimeLeft -= SLEEP_DURATION;
             }
+            env.ui.setFreeze(id, freezeTimeLeft);
         } catch (InterruptedException e) {}
     }
 
@@ -217,13 +231,20 @@ public class Player implements Runnable {
 
     public void createThread() {
         this.playerThread = new Thread(this);
+        synchronized(dealer.threadsCreated){
+            dealer.threadsCreated.push(this);
+            env.logger.info("thread " + playerThread.getName() + " created.");
+        }
         this.playerThread.start();
     }
 
-    public void notifyPlayer(boolean rulling) {
+    public void notifyPlayer(int rulling) {
+        //rulling = 1 means a point
+        //rulling = 0 means a penalty
+        //rulling = -1 means not a full set
         synchronized (this) {
             this.rulling = rulling;
-            this.notifyAll(); // Notify all waiting players
+            this.notify(); // Notify waiting player
         }
     }
 

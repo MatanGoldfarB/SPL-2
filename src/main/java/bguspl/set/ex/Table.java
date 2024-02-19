@@ -52,9 +52,7 @@ public class Table {
             tokensOnSlot.add(new LinkedList<>());
         }
         this.shouldRemoveCard = new Boolean[env.config.tableSize];
-        for (int i = 0; i < shouldRemoveCard.length; i++) {
-            shouldRemoveCard[i] = false;
-        }
+        Arrays.fill(shouldRemoveCard, false);
     }
 
 
@@ -109,7 +107,6 @@ public class Table {
         cardToSlot[card] = slot;
         slotToCard[slot] = card;
 
-        // TODO implement
         env.ui.placeCard(card, slot);
     }
 
@@ -122,7 +119,6 @@ public class Table {
             Thread.sleep(env.config.tableDelayMillis);
         } catch (InterruptedException ignored) {}
 
-        // TODO implement
         cardToSlot[slotToCard[slot]] = null;
         slotToCard[slot] = null;
         tokensOnSlot.get(slot).clear();
@@ -137,7 +133,6 @@ public class Table {
      * @param slot   - the slot on which to place the token.
      */
     public synchronized void placeToken(int player, int slot) {
-        // TODO implement
         if(slotToCard[slot] != null){
             tokensOnSlot.get(slot).add(player);
             env.ui.placeToken(player, slot);
@@ -150,7 +145,6 @@ public class Table {
      * @param slot   - the slot from which to remove the token.
      */
     public synchronized void removeToken(int player, int slot) {
-        // TODO implement
         Integer Iplayer = player;
         tokensOnSlot.get(slot).remove(Iplayer);
         env.ui.removeToken(player, slot);
