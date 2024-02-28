@@ -225,10 +225,12 @@ public class Player implements Runnable {
         } catch (InterruptedException e) {}
     }
 
+    // Returns the player's score
     public int score() {
         return score;
     }
 
+    // Creates a player thread and adds it to the logger
     public void createThread() {
         this.playerThread = new Thread(this);
         synchronized(dealer.threadsCreated){
@@ -238,6 +240,7 @@ public class Player implements Runnable {
         this.playerThread.start();
     }
 
+    // Used by dealer to notify the player about his set
     public void notifyPlayer(int rulling) {
         //rulling = 1 means a point
         //rulling = 0 means a penalty
@@ -248,10 +251,12 @@ public class Player implements Runnable {
         }
     }
 
+    // Returns the player's id
     public int getId(){
         return id;
     }
 
+    // Checks how many tokens the player placed
     public int numTokensPlaced(){
         int count = 0;
         for(LinkedList<Integer> slot : table.tokensOnSlot){

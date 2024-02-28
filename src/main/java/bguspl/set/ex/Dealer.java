@@ -270,12 +270,14 @@ public class Dealer implements Runnable {
         } catch (InterruptedException ignored) {}
     }
 
+    // Used from player to notify the dealer he needs to check the player's set
     public void notifyDealer(int playerId) {
         try {
             playersWaitBlockingQueue.add(playerId);
         } catch (IllegalStateException ignored) {}
     }
 
+    // Gets a player id and returns the player object
     public Player idToPlayer(int id) {
         for(Player player : players){
             if(player.getId() == id){
@@ -285,6 +287,7 @@ public class Dealer implements Runnable {
         return null;
     }
 
+    // Gets a player and checks if his set is legal
     public boolean checkSet(int player) {
         synchronized(table){
             int[] set = getSet(player);
@@ -298,6 +301,7 @@ public class Dealer implements Runnable {
         }
     }
 
+    // Gets a player and returning his tokens he placed
     private int[] getSet(int player){
         int[] set = new int[env.config.featureSize];
         int index=0;
