@@ -12,13 +12,25 @@ with a short description of:
 
 1. Fully supporting all configuration fields and avoiding the use of magic numbers
 
-We are not entitled to this bonus.
+a.We used the field featureSize as the size of the actions blockingQueue.
+We used the field featureCount by using the field config.tableSize (featureSize x featureCount)
+We used the hints() function in the dealer's run() method.
+The rest of the fields were used instead of specific numbers in the program's methods.
+b.In dealer's and player's methods.
+c.We changed the fields in the config.properties file and checked how the program changes accordingly.
+
 
 --------------------
 
 2. Terminating all threads (that you created) gracefully and in reverse order to the order they were created in.
 
-We are not entitled to this bonus.
+a.We created a stack of Players and each time a player thread and AI thread were created we pushed the player inside the stack
+(while using this stack as a lock in order to synchronize the creation)
+When the program is terminating, the function terminate() of dealer uses pop on each player in the stack and calls 
+the terminate() function of the player. We created another boolean field called TerminateAi in order to differentiate
+between terminating the Ai thread or the player thread.
+b. It was used in the function terminate() of dealer and player
+c.We used the log comments to announce each time a thread was created/terminated. 
 
 --------------------
 
@@ -27,7 +39,13 @@ config.turnTimeoutMillis < 0: display nothing.
 config.turnTimeoutMillis = 0: display a timer since the last action (reshuffle or set collected).
 Note: in modes without a countdown timer the dealer must ensure there is always at least one legal set on the table.
 
-We are not entitled to this bonus.
+a.If config.turnTimeoutMillis < 0 we didn't update the time at all.
+  If config.turnTimeoutMillis > 0 we used the original implementation.
+  If config.turnTimeoutMillis = 0 we intialized the reshuffleTime to be Long.MAX_VALUE and another variable called timer to the current time.
+  We set the the countDown to be System.currentTimeMillis()-timer in order for the time to increase since the last action (reshuffle/set)
+  In timerloop() we checked if there is a set on the table, if not, we reshuffle the cards.
+b. It was used in updateTimerDisplay(boolean reset) and timerloop() functions of dealer.
+c. We changed the field TurnTimeoutSeconds in config.properties and checked what happens to the time.
 
 --------------------
 
@@ -35,4 +53,18 @@ We are not entitled to this bonus.
 changed on the display, key input needs to be handled, etc.) and the only threads created by you are:
 1 thread per player + 1 additional thread for non-human players.
 
-We are not entitled to this bonus.
+a.
+Communication between the dealer and players: we used notify and wait mechanism. Each time a player declares a set he
+notifies the dealer by adding the set to the blockingQueue and then wait until the dealer gives his rulling.
+Player and keyPressed: we used an action blockingQueue in the size of featureSize. If the player tries to take an action
+from an empty queue (meaning he has nothing to do at the moment) he goes to sleep.
+Dealer: The dealer is asleep if a set is not declared/he doesn't need to update the time /reshuffle the cards after TurnTimeoutSeconds seconds.
+We used the function blockingQueue.poll(SLEEP_DURATION, TimeUnit.MILLISECONDS) so when the dealer tries to take out a set
+from an empty queue he will go to sleep for SLEEP_DURATION (until he needs to update the timer).
+
+b.Communication between the dealer and players: In player's run() method, dealer's sleepUntilWokenOrTimeout() method
+Player and keyPressed: player's run() and keyPressed() methods.
+Dealer: sleepUntilWokenOrTimeout() method.
+
+c.We used the log comments to make sure the player is not awake when he shouldn't be, for example in the run() 
+method of player we checked that the player isn't awake unless he recieved a rulling (1 for point, 0 for penalty or -1 for irrelevant set).

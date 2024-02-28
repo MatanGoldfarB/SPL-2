@@ -74,6 +74,8 @@ public class Dealer implements Runnable {
         while (!shouldFinish()) {
             Collections.shuffle(deck);
             placeCardsOnTable();
+            if(env.config.hints)
+               table.hints();
             timerLoop();
             updateTimerDisplay(false);
             removeAllCardsFromTable();
@@ -85,12 +87,24 @@ public class Dealer implements Runnable {
     /**
      * The inner loop of the dealer thread that runs as long as the countdown did not time out.
      */
+    //60 sec
     private void timerLoop() {
         while (!terminate && System.currentTimeMillis() < reshuffleTime) {
             sleepUntilWokenOrTimeout();
             updateTimerDisplay(false);
             removeCardsFromTable();
             if(placeCardsOnTable() && env.config.turnTimeoutMillis <= 0){
+                List<Integer> cardOnTable = new ArrayList<>();
+                for (Integer card : table.slotToCard) {
+                    if (card != null) {
+                        cardOnTable.add(card);
+                    }
+                }
+                if(env.util.findSets(cardOnTable, 1).size() == 0){
+                    reshuffleTime = System.currentTimeMillis();
+                }
+            }
+            else if(env.config.turnTimeoutMillis <= 0){
                 List<Integer> cardOnTable = new ArrayList<>();
                 for (Integer card : table.slotToCard) {
                     if (card != null) {
@@ -177,7 +191,7 @@ public class Dealer implements Runnable {
     private synchronized void sleepUntilWokenOrTimeout() {
         Integer playerId = null;
         try {
-            playerId = this.playersWaitBlockingQueue.poll(SLEEP_DURATION, TimeUnit.MILLISECONDS);
+            playerId = this.playersWaitBlockingQueue.poll(env.config.tableDelayMillis, TimeUnit.MILLISECONDS);
         } catch (InterruptedException ignored) {
         }
         if(playerId != null){
@@ -202,7 +216,12 @@ public class Dealer implements Runnable {
             if(reset){
                 reshuffleTime = System.currentTimeMillis() + env.config.turnTimeoutMillis;
             }
-            env.ui.setCountdown(reshuffleTime-System.currentTimeMillis(), false);
+            if(reshuffleTime-System.currentTimeMillis()<=env.config.turnTimeoutWarningMillis && reshuffleTime-System.currentTimeMillis()>=0)
+               env.ui.setCountdown(reshuffleTime-System.currentTimeMillis(), true);
+            else{
+                env.ui.setCountdown(reshuffleTime-System.currentTimeMillis(), false);
+            }
+           
         } else if(env.config.turnTimeoutMillis == 0){
             if(reset){
                 reshuffleTime = Long.MAX_VALUE;
@@ -280,7 +299,7 @@ public class Dealer implements Runnable {
     }
 
     private int[] getSet(int player){
-        int[] set = new int[3];
+        int[] set = new int[env.config.featureSize];
         int index=0;
         int slotIndex = 0;
         for(LinkedList<Integer> slot : table.tokensOnSlot){
